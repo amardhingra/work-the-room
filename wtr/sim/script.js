@@ -17,7 +17,7 @@ function process(data)
 {
 	// check the canvas size
 	var canvas = document.getElementById("canvas");
-	var y_base = 30;
+	var y_base = 60;
 	var size = canvas.height - y_base;
 	var x_base = (canvas.width - size) * 0.5;
 	// parse the data
@@ -120,6 +120,62 @@ function process(data)
 			ctx.lineTo(x_curr[j], y_curr[j]);
 			ctx.stroke();
 		}
+	}
+	// print info on each player
+	var N2 = Math.round(N * 0.5);
+	ctx.strokeStyle = "black";
+	ctx.textAlign = "right";
+	var L = 25;
+	var R = 50 + x_base + size;
+	ctx.lineWidth = 2;
+	ctx.font = "15px Arial";
+	ctx.strokeText("id", L, 30);
+	ctx.strokeText("id", R, 30);
+	ctx.font = "14px Arial";
+	ctx.lineWidth = 1;
+	for (var i = 0 ; i != N2 ; ++i) {
+		var j = i + N2;
+		ctx.strokeText(i, L, i * 18.5 + 50);
+		ctx.strokeText(j, R, i * 18.5 + 50);
+	}
+	L += 50;
+	R += 50;
+	ctx.lineWidth = 2;
+	ctx.font = "15px Arial";
+	ctx.strokeText("group", L, 30);
+	ctx.strokeText("group", R, 30);
+	ctx.font = "14px Arial";
+	ctx.lineWidth = 1;
+	for (var i = 0 ; i != N2 ; ++i) {
+		var j = i + N2;
+		ctx.strokeText(group[i], L, i * 18.5 + 50);
+		ctx.strokeText(group[j], R, i * 18.5 + 50);
+	}
+	L += 40;
+	R += 40;
+	ctx.lineWidth = 2;
+	ctx.font = "15px Arial";
+	ctx.strokeText("score", L, 30);
+	ctx.strokeText("score", R, 30);
+	ctx.font = "14px Arial";
+	ctx.lineWidth = 1;
+	for (var i = 0 ; i != N2 ; ++i) {
+		var j = i + N2;
+		ctx.strokeText(score[i], L, i * 18.5 + 50);
+		ctx.strokeText(score[j], R, i * 18.5 + 50);
+	}
+	L += 40;
+	R += 40;
+	ctx.lineWidth = 2;
+	ctx.font = "15px Arial";
+	ctx.strokeText("chat", L, 30);
+	ctx.strokeText("chat", R, 30);
+	ctx.font = "14px Arial";
+	ctx.lineWidth = 1;
+	for (var i = 0 ; i != N2 ; ++i) {
+		var j = i + N2;
+		ctx.strokeText(wisdom[i], L, i * 18.5 + 50);
+		ctx.strokeText(wisdom[j], R, i * 18.5 + 50);
 	}
 	return refresh;
 }

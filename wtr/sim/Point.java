@@ -20,9 +20,4 @@ public class Point {
 	{
 		throw new UnsupportedOperationException();
 	}
-
-	public double distance(Point p)
-	{
-		return Math.hypot(x - p.x, y - p.y);
-	}
 }

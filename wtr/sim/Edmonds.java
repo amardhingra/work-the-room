@@ -48,8 +48,8 @@ public class Edmonds {
 		while (qh < qt) {
 			int v = q[qh++];
 			for (int to : graph[v]) {
-				if (base[v] == base[to] || match[v] == to) continue;
-				if (to == root || match[to] >= 0 && p[match[to]] >= 0) {
+				if (base[v] == base[to] || match[v] == to) ;
+				else if (to == root || (match[to] >= 0 && p[match[to]] >= 0)) {
 					int curbase = lca(match, base, p, v, to);
 					boolean[] blossom = new boolean [nodes];
 					mark(match, base, blossom, p, v, curbase, to);
@@ -81,17 +81,17 @@ public class Edmonds {
 		int[] p = new int [nodes];
 		for (int i = 0 ; i != nodes ; ++i)
 			match[i] = -1;
-		for (int i = 0 ; i != nodes ; ++i) {
-			if (match[i] >= 0) continue;
-			int v = find(graph, match, p, i);
-			while (v >= 0) {
-				int pv = p[v];
-				int ppv = match[pv];
-				match[v] = pv;
-				match[pv] = v;
-				v = ppv;
+		for (int i = 0 ; i != nodes ; ++i)
+			if (match[i] < 0) {
+				int v = find(graph, match, p, i);
+				while (v >= 0) {
+					int pv = p[v];
+					int ppv = match[pv];
+					match[v] = pv;
+					match[pv] = v;
+					v = ppv;
+				}
 			}
-		}
 		return match;
 	}
 }

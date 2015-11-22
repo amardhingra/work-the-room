@@ -10,17 +10,20 @@ class Timer extends Thread {
 	private Exception error = null;
 	private Object result = null;
 
-	public <T> T call(Callable <T> task, long timeout) throws Exception
+	public <T> void call_start(Callable <T> task)
 	{
-		if (!isAlive())
-			throw new IllegalStateException();
-		if (task == null || timeout < 0)
-			throw new IllegalArgumentException();
+		if (!isAlive()) throw new IllegalStateException();
+		if (task == null) throw new IllegalArgumentException();
 		this.task = task;
 		synchronized (this) {
 			start = true;
 			notify();
 		}
+	}
+
+	public <T> T call_wait(long timeout) throws Exception
+	{
+		if (timeout < 0) throw new IllegalArgumentException();
 		synchronized (this) {
 			if (finished == false)
 				try {

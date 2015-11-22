@@ -16,15 +16,14 @@ class Simulator {
 		int friends = 10;
 		int strangers = 88;
 		boolean verbose = false;
-		boolean recompile = false;
 		long init_timeout = 1000;
 		long play_timeout = 1000;
 		int room_side = 20;
 		int turns = 1800;
 		boolean gui = false;
-		long gui_refresh = 1000;
-		Class[] classes = null;
+		long gui_refresh = 100;
 		String[] groups = null;
+		ArrayList <Class <Player> > classes = null;
 		HashSet <String> group_set = new HashSet <String> ();
 		group_set.add("g0");
 		try {
@@ -48,14 +47,19 @@ class Simulator {
 							throw new IllegalArgumentException("Repeated group (player)");
 					if (group_set.size() == 0)
 						throw new IllegalArgumentException("Missing groups (players)");
+				} else if (args[a].equals("-t") || args[a].equals("--turns")) {
+					if (++a == args.length)
+						throw new IllegalArgumentException("Missing number of turns");
+					turns = Integer.parseInt(args[a]);
+					if (turns <= 0)
+						throw new IllegalArgumentException("Invalid number of turns");
 				} else if (args[a].equals("--fps")) {
 					if (++a == args.length)
 						throw new IllegalArgumentException("Missing FPS");
 					double gui_fps = Double.parseDouble(args[a]);
-					gui_refresh = gui_fps > 0.0 ? (long) Math.round(1000.0 / gui_fps) : -1;
+					gui_refresh = gui_fps > 0.0 ? Math.round(1000.0 / gui_fps) : -1;
 					gui = true;
 				} else if (args[a].equals("--gui")) gui = true;
-				else if (args[a].equals("--recompile")) recompile = true;
 				else if (args[a].equals("--verbose")) verbose = true;
 				else throw new IllegalArgumentException("Unknown argument: " + args[a]);
 			int N = friends + strangers + 2;
@@ -64,12 +68,16 @@ class Simulator {
 			if (N % group_set.size() != 0)
 				throw new IllegalArgumentException("Participants not divisible by players");
 			int instances = N / group_set.size();
-			List <String> group_list = new ArrayList <String> ();
-			for (String group : group_set)
-				for (int i = 0 ; i != instances ; ++i)
-					group_list.add(group);
-			groups = group_list.toArray(new String [0]);
-			classes = load(groups, recompile);
+			groups = new String [N];
+			classes = new ArrayList <Class <Player> > ();
+			int j = 0;
+			for (String group : group_set) {
+				Class <Player> player_class = load(group);
+				for (int i = 0 ; i != instances ; ++i) {
+					groups[j++] = group;
+					classes.add(player_class);
+				}
+			}
 		} catch (Exception e) {
 			System.err.println("Error during setup: " + e.getMessage());
 			e.printStackTrace();
@@ -85,7 +93,6 @@ class Simulator {
 		System.err.println("");
 		System.err.println("Instances (per player): " + N / group_set.size());
 		System.err.println("Verbose: " + (verbose ? "yes" : "no"));
-		System.err.println("Recompile: " + (recompile ? "yes" : "no"));
 		if (!gui)
 			System.err.println("GUI: disabled");
 		else if (gui_refresh < 0)
@@ -110,22 +117,28 @@ class Simulator {
 			System.exit(1);
 		}
 		for (int i = 0 ; i != score.length ; ++i)
-			System.err.println("Player " + (i + 1) + " scored: " + score[i]);
+			System.err.println("Player " + i + " (" + groups[i] + ") scored: " + score[i]);
 		System.exit(0);
 	}
 
 	private static final Random random = new Random();
 
-	private static void game(String[] groups, Class[] classes,
-	                         int friends, int strangers,
-	                         int room_side, int turns,
-	                         int[] score, boolean[] timeout,
-	                         long init_timeout, long play_timeout,
-	                         boolean gui, long gui_refresh,
+	private static void game(String[] groups,
+	                         ArrayList <Class <Player> > classes,
+	                         int friends,
+	                         int strangers,
+	                         int room_side,
+	                         int turns,
+	                         int[] score,
+	                         boolean[] timeout,
+	                         long init_timeout,
+	                         long play_timeout,
+	                         boolean gui,
+	                         long gui_refresh,
 	                         boolean verbose) throws Exception
 	{
 		int N = friends + strangers + 2;
-		if (classes.length != N || groups.length != N ||
+		if (classes.size() != N || groups.length != N ||
 		    score.length != N || timeout.length != N)
 			throw new IllegalArgumentException();
 		PrintStream out = verbose ? System.out : null;
@@ -157,25 +170,29 @@ class Simulator {
 		Timer[] threads = new Timer [N];
 		Player[] players = new Player [N];
 		for (int i = 0 ; i != N ; ++i) {
-			int[] friend_ids = new int [friends];
+			final int[] friend_ids = new int [friends];
 			for (int j = 0, k = 0 ; j != N ; ++j)
 				if (F[i][j])
 					friend_ids[k++] = j;
-			Class player_class = classes[i];
-			int id = i;
+			final Class <Player> player_class = classes.get(i);
+			final int id = i;
 			threads[i] = new Timer();
 			threads[i].start();
-			players[i] = threads[i].call(new Callable <Player> () {
-
-				public Player call() throws Exception
-				{
-					Player p = (Player) player_class.newInstance();
+			threads[i].call_start(new Callable <Player> () {
+				public Player call() throws Exception {
+					Player p = player_class.newInstance();
 					p.init(id, friend_ids, strangers);
 					return p;
-				}
-			}, init_timeout);
+				}});
+			try {
+				players[i] = threads[i].call_wait(init_timeout);
+			} catch (TimeoutException e) {
+				System.err.println("Player " + i + " (" + groups[i] +
+				                   ") timed out during \"init\"!");
+			}
 		}
 		// play the game
+		Point p_0 = new Point(0.0, 0.0, -1);
 		Point[] M = new Point [N];
 		boolean[] C = new boolean [N];
 		for (int i = 0 ; i != N ; ++i) {
@@ -204,35 +221,59 @@ class Simulator {
 			if (gui) gui(server, state(groups, L, Lp, score, W, C, F, Sm,
 			                           room_side, clock, gui_refresh));
 			if (out != null) println(out, clock);
-			else System.err.println(clock);
-			// for each player
+			// call play function of players
 			for (int i = 0 ; i != N ; ++i) {
+				// skip invalidated players
+				if (players[i] == null) continue;
 				// find which players are in view
 				int k = 0;
-				for (int j = 0 ; j != N ; ++j)
-					if (L[i].distance(L[j]) <= 6.0) k++;
+				for (int j = 0 ; j != N ; ++j) {
+					double dx = L[i].x - L[j].x;
+					double dy = L[i].y - L[j].y;
+					double dd = dx * dx + dy * dy;
+					if (dd <= 36.0) k++;
+				}
 				Point[] V = new Point [k];
 				int[] Vc = new int [k];
-				for (int j = k = 0 ; j != N ; ++j)
-					if (L[i].distance(L[j]) <= 6) {
-						Vc[k] = L[i].distance(L[M[j].id]) > 6 ? -1 : M[j].id;
+				for (int j = k = 0 ; j != N ; ++j) {
+					double dx = L[i].x - L[j].x;
+					double dy = L[i].y - L[j].y;
+					double dd = dx * dx + dy * dy;
+					if (dd <= 36.0) {
+						int o = M[j].id;
+						dx = L[i].x - L[o].x;
+						dy = L[i].y - L[o].y;
+						dd = dx * dx + dy * dy;
+						Vc[k] = dd <= 36.0 ? o : -1;
 						V[k++] = new Point(L[j].x, L[j].y, j);
 					}
+				}
 				println(out, i + " views " + (k - 1) + " people from ("
-				                         + L[i].x + ", " + L[i].y + ")");
+				               + L[i].x + ", " + L[i].y + ")");
 				// get next move from player
-				int j = M[i].id;
-				boolean wiser = C[i];
-				int more_wisdom = F[j][i] ? -1 : W[j][i];
-				Player player = players[i];
-				M[i] = threads[i].call(new Callable <Point> () {
-
-					public Point call() throws Exception
-					{
+				final int j = M[i].id;
+				final int more_wisdom = W[j][i];
+				final boolean wiser = C[i];
+				final Player player = players[i];
+				threads[i].call_start(new Callable <Point> () {
+					public Point call() throws Exception {
 						return player.play(V, Vc, wiser, more_wisdom);
+					}});
+			}
+			for (int i = 0 ; i != N ; ++i) {
+				if (players[i] != null)
+					try {
+						M[i] = threads[i].call_wait(play_timeout);
+					} catch (TimeoutException e) {
+						System.err.println("Player " + i + " (" + groups[i] +
+						                   ") timed out during \"play\"!");
+						players[i] = null;
 					}
-				}, play_timeout);
-				// invalid moves become stay put
+				if (players[i] == null) {
+					M[i] = new Point(0.0, 0.0, i);
+					continue;
+				}
+				// validate move
 				Point m = M[i];
 				M[i] = null;
 				C[i] = false;
@@ -248,25 +289,23 @@ class Simulator {
 					println(out, i + ": Cannot move and chat simultaneously");
 				else if (m.id != i && L[i].id != i && L[i].id != m.id)
 					println(out, i + ": Cannot initiate chat yet");
-				else if (m.id != i && L[i].distance(L[m.id]) < 0.5001)
+				else if (m.id != i && distance_lt(L[i], L[m.id], 0.5))
 					println(out, i + ": Chat target too close to chat");
-				else if (m.id != i && L[i].distance(L[m.id]) > 2.0001)
+				else if (m.id != i && distance_gt(L[i], L[m.id], 2.0))
 					println(out, i + ": Chat target too far to chat");
 				else if (m.id == i && L[i].x + m.x < 0)
-					println(out, i + ": Invalid movement: dx < 0");
+					println(out, i + ": Invalid movement: x < 0");
 				else if (m.id == i && L[i].y + m.y < 0)
-					println(out, i + ": Invalid movement: dy < 0");
+					println(out, i + ": Invalid movement: y < 0");
 				else if (m.id == i && L[i].x + m.x > room_side)
-					println(out, i + ": Invalid movement: dx > " + room_side);
+					println(out, i + ": Invalid movement: x > " + room_side);
 				else if (m.id == i && L[i].y + m.y > room_side)
-					println(out, i + ": Invalid movement: dy > " + room_side);
-				else if (m.id == i && Math.hypot(m.x, m.y) > 6.0001)
-					println(out, i + ": Movement too fast: " +
-					                  Math.hypot(m.x, m.y));
+					println(out, i + ": Invalid movement: y > " + room_side);
+				else if (m.id == i && distance_gt(m, p_0, 6.0))
+					println(out, i + ": Invalid movement speed");
 				else M[i] = m;
-				// player has to stay put
-				if (M[i] == null)
-					M[i] = new Point(0.0, 0.0, i);
+				// player stays put
+				if (M[i] == null) M[i] = new Point(0.0, 0.0, i);
 			}
 			// both players want to continue chatting (rule 1)
 			for (int i = 0 ; i != N ; ++i) {
@@ -292,7 +331,7 @@ class Simulator {
 				int j = M[i].id;
 				if (i != j && M[j].id != i && L[i].id == i) {
 					verify(!C[i]);
-					Sl.add(new Pair(i, L[i].distance(L[j])));
+					Sl.add(new Pair(i, distance(L[i], L[j])));
 				}
 			}
 			// shuffle before sorting for random handling of equals
@@ -362,11 +401,16 @@ class Simulator {
 					continue;
 				}
 				// search for closest player
-				double d = L[i].distance(L[j]);
+				double dx = L[i].x - L[j].x;
+				double dy = L[i].y - L[j].y;
+				double d = dx * dx + dy * dy;
 				boolean c = true;
 				for (int k = 0 ; k != N && c ; ++k)
-					if (i != k && j != k && L[i].distance(L[k]) < d)
-						c = false;
+					if (i != k && j != k) {
+						dx = L[i].x - L[k].x;
+						dy = L[i].y - L[k].y;
+						if (dx * dx + dy * dy <= d) c = false;
+					}
 				// gain wisdom if closest
 				if (!c) println(out, i + " cannot gain wisdom from " + j);
 				else {
@@ -424,12 +468,15 @@ class Simulator {
 		// enforce symmetries
 		int N = friends + strangers + 2;
 		// generate the graph of friends and soulmates
-		boolean[][] F = rand_und_graph(N, friends + 1);
+		boolean[][] F = random_symmetric_graph(N, friends + 1);
 		// initialize wisdom array using the graph
 		int[][] W = new int [N][N];
+		int[] Fc = new int [N];
 		for (int i = 0 ; i != N ; ++i)
-			for (int j = 0 ; j != N ; ++j)
-				W[i][j] = F[i][j] ? 50 : -1;
+			for (int j = 0 ; j != i ; ++j) {
+				W[i][j] = W[j][i] = F[i][j] ? 50 : -1;
+				verify(F[i][j] == F[j][i]);
+			}
 		// create a random 1:1 mapping [0,N) -> [0,N)
 		int[] M = new int [N];
 		for (int i = 0 ; i != N ; ++i)
@@ -459,7 +506,7 @@ class Simulator {
 			for (int j = k = 0 ; j != N ; ++j)
 				if (Fm[i][j]) G[i][k++] = j;
 		}
-		// find an edge cover using Edmond's max matching algorithm
+		// find an edge cover using Edmonds max matching algorithm
 		int[] C = Edmonds.matching(G);
 		// convert edge cover to original graph and update wisdom
 		for (int mi = 0 ; mi != N ; ++mi) {
@@ -480,7 +527,7 @@ class Simulator {
 		for (int s = 0 ; s != strangers ; ++s)
 			S[random.nextInt(3)]++;
 		// distribute the stranger classes to players
-		for (int c = 0 ; c != 3 ; ++c)
+		for (int c = 0 ; c != S.length ; ++c)
 			for (int s = 0 ; s != S[c] ; ++s)
 				for (int i = 0 ; i != N ; ++i) {
 					int k = 0;
@@ -493,10 +540,13 @@ class Simulator {
 							break;
 						}
 				}
+		for (int i = 0 ; i != N ; ++i)
+			for (int j = 0 ; j != N ; ++j)
+				verify(W[i][j] >= 0);
 		return W;
 	}
 
-	private static boolean[][] rand_und_graph(int nodes, int degrees)
+	private static boolean[][] random_symmetric_graph(int nodes, int degrees)
 	{
 		if (nodes <= 0 || degrees <= 0 || degrees >= nodes)
 			throw new IllegalArgumentException();
@@ -563,6 +613,27 @@ class Simulator {
 			}
 		}
 		return C;
+	}
+
+	private static double distance(Point p1, Point p2)
+	{
+		double dx = p1.x - p2.x;
+		double dy = p1.y - p2.y;
+		return Math.sqrt(dx * dx + dy * dy);
+	}
+
+	private static boolean distance_gt(Point p1, Point p2, double d)
+	{
+		double dx = p1.x - p2.x;
+		double dy = p1.y - p2.y;
+		return dx * dx + dy * dy > d * d;
+	}
+
+	private static boolean distance_lt(Point p1, Point p2, double d)
+	{
+		double dx = p1.x - p2.x;
+		double dy = p1.y - p2.y;
+		return dx * dx + dy * dy < d * d;
 	}
 
 	private static void print(PrintStream out, String message)
@@ -680,47 +751,50 @@ class Simulator {
 		return files;
 	}
 
-	private static Class[] load(String[] groups, boolean compile)
-	        throws IOException, ReflectiveOperationException
+	// last modified
+	private static long last_modified(Iterable <File> files)
 	{
-		// get unique player sources
-		Map <String, Class> group_map = new HashMap <String, Class> ();
-		for (int g = 0 ; g != groups.length ; ++g)
-			group_map.put(groups[g], null);
-		// compile and load classes
-		ClassLoader loader = Simulator.class.getClassLoader();
-		JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-		StandardJavaFileManager manager = compiler.
-		                        getStandardFileManager(null, null, null);
-		String sep = File.separator;
-		for (String group : group_map.keySet()) {
-			String dir = root + sep + group;
-			File class_file = new File(dir + sep + "Player.class");
-			if (compile || !class_file.exists()) {
-				File source_file = new File(dir + sep + "Player.java");
-				if (!source_file.exists())
-					throw new FileNotFoundException(
-					          "Missing source of group " + group);
-				Set <File> files = directory(dir, ".java");
-				System.err.print("Compiling " + group +
-				                 " (" + files.size() + " files) ... ");
-				if (!compiler.getTask(null, manager, null, null, null,
-				     manager.getJavaFileObjectsFromFiles(files)).call())
-					throw new IOException(
-					          "Cannot compile source of " + group);
-				System.err.println("done!");
-				class_file = new File(dir + sep + "Player.class");
-				if (!class_file.exists())
-					throw new FileNotFoundException(
-					          "Missing class of group " + group);
-			}
-			Class player = loader.loadClass(root + "." + group + ".Player");
-			group_map.replace(group, player);
+		long last_date = 0;
+		for (File file : files) {
+			long date = file.lastModified();
+			if (last_date < date)
+				last_date = date;
 		}
-		// map to players
-		Class[] classes = new Class [groups.length];
-		for (int g = 0 ; g != groups.length ; ++g)
-			classes[g] = group_map.get(groups[g]);
-		return classes;
+		return last_date;
+	}
+
+	// compile and load
+	private static Class <Player> load(String group) throws IOException,
+	                                       ReflectiveOperationException
+	{
+		String sep = File.separator;
+		Set <File> player_files = directory(root + sep + group, ".java");
+		File class_file = new File(root + sep + group + sep + "Player.class");
+		long class_modified = class_file.exists() ? class_file.lastModified() : -1;
+		if (class_modified < 0 || class_modified < last_modified(player_files) ||
+		    class_modified < last_modified(directory(root + sep + "sim", ".java"))) {
+			JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+			if (compiler == null)
+				throw new IOException("Cannot find Java compiler");
+			StandardJavaFileManager manager = compiler.
+			                        getStandardFileManager(null, null, null);
+			long files = player_files.size();
+			System.err.print("Compiling " + files + " .java files ... ");
+			if (!compiler.getTask(null, manager, null, null, null,
+			     manager.getJavaFileObjectsFromFiles(player_files)).call())
+				throw new IOException("Compilation failed");
+			System.err.println("done!");
+			class_file = new File(root + sep + group + sep + "Player.class");
+			if (!class_file.exists())
+				throw new FileNotFoundException("Missing class file");
+		}
+		ClassLoader loader = Simulator.class.getClassLoader();
+		if (loader == null)
+			throw new IOException("Cannot find Java class loader");
+		@SuppressWarnings("rawtypes")
+		Class raw_class = loader.loadClass(root + "." + group + ".Player");
+		@SuppressWarnings("unchecked")
+		Class <Player> player_class = raw_class;
+		return player_class;
 	}
 }
