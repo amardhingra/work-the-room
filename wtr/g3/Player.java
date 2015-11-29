@@ -19,9 +19,6 @@ public class Player implements wtr.sim.Player {
 
     private int turnsWaited = 0;
 
-    // the remaining wisdom per player
-    private int[] wisdom = null;
-
     private HashMap<Integer, PlayerStats> stats;
 
     // random generator
@@ -31,14 +28,9 @@ public class Player implements wtr.sim.Player {
     public void init(int id, int[] friend_ids, int strangers) {
         self_id = id;
         // initialize the wisdom array
-        int N = friend_ids.length + strangers + 2;
         stats = new HashMap<>();
-        wisdom = new int[N];
-        for (int i = 0; i != N; ++i) {
-            wisdom[i] = i == self_id ? 0 : -1;
-        }
+
         for (int friend_id : friend_ids) {
-            wisdom[friend_id] = 50;
             stats.put(friend_id, new PlayerStats(friend_id, 50));
         }
     }
