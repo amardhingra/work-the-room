@@ -4,8 +4,6 @@ import wtr.sim.Point;
 
 public class PlayerStats {
 
-    public final static float DIVISOR = 10;
-
     public int id;
     public final int wisdom;
     public int wisdomRemaining;
@@ -22,10 +20,6 @@ public class PlayerStats {
 
     public void setWisdomRemaining(int wisdomRemaining){
         this.wisdomRemaining = wisdomRemaining;
-    }
-
-    public int waitTime(){
-        return Math.round(wisdomRemaining/DIVISOR);
     }
 
     public Point getTalkMove(){
