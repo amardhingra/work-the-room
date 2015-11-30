@@ -11,6 +11,8 @@ class Simulator {
 
 	private static final String root = "wtr";
 
+	private static final int soulmate_multiplier = 1;
+
 	public static void main(String[] args)
 	{
 		int friends = 10;
@@ -106,11 +108,12 @@ class Simulator {
 		// start game
 		int[] score = new int [N];
 		boolean[] timeout = new boolean [N];
+		boolean[] soulmate = new boolean [N];
 		int max_score = -1;
 		try {
 			max_score = game(groups, classes, friends, strangers,
-			                 room_side, turns, score, timeout,
-			                 init_timeout, play_timeout,
+			                 room_side, turns, score, soulmate,
+			                 timeout, init_timeout, play_timeout,
 			                 gui, gui_refresh, verbose);
 		} catch (Exception e) {
 			System.err.println("Error during the game: " + e.getMessage());
@@ -120,7 +123,8 @@ class Simulator {
 		for (int i = 0 ; i != score.length ; ++i)
 			System.err.println("Player " + i + " (" + groups[i] +
 			                   ") scored: " + score[i] +
-			                   (score[i] == max_score ? " (max)" : ""));
+			                   (score[i] == max_score ? " (maximum score) " : " ") +
+			                   (soulmate[i] ? "[soulmate chat]" : ""));
 		System.err.println("Available wisdom: " + max_score);
 		int group_instances = N / group_set.size();
 		int i = 0;
@@ -148,6 +152,7 @@ class Simulator {
 	                        int room_side,
 	                        int turns,
 	                        int[] score,
+	                        boolean[] soulmate,
 	                        boolean[] timeout,
 	                        long init_timeout,
 	                        long play_timeout,
@@ -179,8 +184,8 @@ class Simulator {
 				if (W[i][j] == 50) {
 					verify(W[j][i] == 50);
 					F[i][j] = F[j][i] = true;
-				} else if (W[i][j] == 200) {
-					verify(W[j][i] == 200);
+				} else if (W[i][j] == 200 * soulmate_multiplier) {
+					verify(W[j][i] == 200 * soulmate_multiplier);
 					Sm[i] = j;
 					Sm[j] = i;
 				}
@@ -273,8 +278,7 @@ class Simulator {
 				println(out, i + " views " + (k - 1) + " people from ("
 				               + L[i].x + ", " + L[i].y + ")");
 				// get next move from player
-				final int j = M[i].id;
-				final int more_wisdom = W[j][i];
+				final int more_wisdom = W[M[i].id][i];
 				final boolean wiser = C[i];
 				final Player player = players[i];
 				threads[i].call_start(new Callable <Point> () {
@@ -422,6 +426,7 @@ class Simulator {
 					println(out, i + " has no more wisdom to gain from " + j);
 					continue;
 				}
+				if (Sm[i] == j) soulmate[i] = true;
 				// search for closest player
 				double dx = L[i].x - L[j].x;
 				double dy = L[i].y - L[j].y;
@@ -436,9 +441,10 @@ class Simulator {
 				// gain wisdom if closest
 				if (!c) println(out, i + " cannot gain wisdom from " + j);
 				else {
-					W[j][i]--;
+					int w = Sm[i] == j ? soulmate_multiplier : 1;
+					W[j][i] -= w;
+					score[i] += w;
 					C[i] = true;
-					score[i]++;
 					println(out, i + " gained wisdom from " + j);
 				}
 			}
@@ -542,7 +548,7 @@ class Simulator {
 				verify(F[i][j] && F[j][i]);
 				verify(W[i][j] == 50 && W[j][i] == 50);
 				F[i][j] = F[j][i] = false;
-				W[i][j] = W[j][i] = 200;
+				W[i][j] = W[j][i] = 200 * soulmate_multiplier;
 			}
 		}
 		// generate how many strangers give 0, 10, and 20 points
@@ -631,7 +637,6 @@ class Simulator {
 					// connect two pairs of nodes
 					C[i][i2] = C[i2][i] = true;
 					C[j][j2] = C[j2][j] = true;
-					// 
 				} else {
 					// pick a disconnected node
 					k = random.nextInt(k) + 1;
