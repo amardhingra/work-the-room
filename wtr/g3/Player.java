@@ -14,6 +14,9 @@ public class Player implements wtr.sim.Player {
     // your own id
     private int self_id = NONE;
 
+    // player we don't want to talk to right now due to interruptions
+    private int illegal = NONE;
+
     // last chat id
     private int lastChat = NONE;
 
@@ -44,6 +47,7 @@ public class Player implements wtr.sim.Player {
         while (players[j].id != chat_ids[i]) j++;
         Point self = players[i];
         Point chat = players[j];
+        illegal = NONE;
 
 
         if (!stats.containsKey(chat.id)) {
@@ -58,7 +62,7 @@ public class Player implements wtr.sim.Player {
 
         if (!wiser && stats.get(chat.id).hasWisdom()) {
             if (++turnsWaited >= stats.get(chat.id).waitTime()) {
-                return randomMove();
+              illegal = chat.id;
             }
         }
 
@@ -71,7 +75,7 @@ public class Player implements wtr.sim.Player {
             return new Point(0.0, 0.0, chat.id);
         }
 
-        if (i == j) {
+        if (i == j || illegal >= 0) {
             Point closestTarget = pickClosestTarget(players, self);
 
             if (closestTarget != null) {
@@ -98,7 +102,7 @@ public class Player implements wtr.sim.Player {
         int targetId = NONE;
 
         for (Point p : players) {
-            if (p.id == self.id)
+            if (p.id == self.id || p.id == illegal)
                 continue;
 
             // compute squared distance
@@ -127,8 +131,7 @@ public class Player implements wtr.sim.Player {
         Point target = null;
 
         for (int i = 0; i < players.length; i++) {
-
-            if (players[i].id != chat_ids[i])
+            if (players[i].id != chat_ids[i] || players[i].id == illegal)
                 continue;
 
             if (stats.containsKey(players[i].id) && stats.get(players[i].id).wisdomRemaining > maxWisdom) {
