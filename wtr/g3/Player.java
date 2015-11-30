@@ -85,7 +85,7 @@ public class Player implements wtr.sim.Player {
         return closestTarget;
       }
 
-      Point maxWisdomTarget = pickTargetWithMaximumRemainingWisdom(players, chat_ids);
+      Point maxWisdomTarget = pickTargetWithMaximumRemainingWisdom(players, chat_ids, self);
       if (maxWisdomTarget != null) {
         if(distance(self, maxWisdomTarget) < MIN_DISTANCE) {
           return maxWisdomTarget;
@@ -128,12 +128,22 @@ public class Player implements wtr.sim.Player {
     return null;
   }
 
-  public Point pickTargetWithMaximumRemainingWisdom(Point[] players, int[] chat_ids) {
+  public Point pickTargetWithMaximumRemainingWisdom(Point[] players, int[] chat_ids, Point self) {
 
     int maxWisdom = 0;
     Point target = null;
 
     for (int i = 0; i < players.length; i++) {
+
+      Point p = players[i];
+      // compute squared distance
+      double dx = self.x - p.x;
+      double dy = self.y - p.y;
+      double dd = dx * dx + dy * dy;
+      if(dd < 0.25 && dd > 0){
+        return null;
+      }
+
       if (players[i].id != chat_ids[i] || players[i].id == illegal)
         continue;
 
