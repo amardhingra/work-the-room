@@ -11,6 +11,12 @@ public class Player implements wtr.sim.Player {
   public static final double MIN_DISTANCE = 1.0;
   public static final double TARGET_DISTANCE = 0.55;
 
+  public static final int AVERAGE_STRANGER_POINTS = 10;
+  public static final int FRIEND_POINTS = 50;
+  public static final int SOULMATE_POINTS = 200;
+  public static final int TICKS = 1800;
+  public static final float TICK_MULTIPLIER = 1.5f;
+
   public int population;
 
   // your own id
@@ -24,6 +30,8 @@ public class Player implements wtr.sim.Player {
 
   private int turnsWaited = 0;
 
+  private boolean canGatherAllWisdom = false;
+
   private HashMap<Integer, PlayerStats> stats;
 
   // random generator
@@ -32,6 +40,9 @@ public class Player implements wtr.sim.Player {
   // init function called once
   public void init(int id, int[] friend_ids, int strangers) {
     population = 2 + friend_ids.length + strangers;
+
+    canGatherAllWisdom = (TICKS * TICK_MULTIPLIER < (friend_ids.length * FRIEND_POINTS + SOULMATE_POINTS + strangers * AVERAGE_STRANGER_POINTS));
+
     self_id = id;
     // initialize the wisdom array
     stats = new HashMap<>();
@@ -184,11 +195,27 @@ public class Player implements wtr.sim.Player {
     return Math.sqrt(dx * dx + dy * dy);
   }
 
-  public int waitTime(int id) {
+  public int getDivisor(){
+    return (int) (Math.pow(population, 0.5));
+  }
+
+  public int waitTime2(int id) {
     if (population >= 100 && stats.get(id).wisdomRemaining <= 50) {
       return 0;
-    } else { 
+    } else {
       return stats.get(id).wisdomRemaining / (int) Math.sqrt(population) * 2;
     }
+  }
+
+  public int waitTime(int id){
+    if (canGatherAllWisdom) {
+      if (stats.get(id).isSpecial()) {
+        return stats.get(id).wisdomRemaining / getDivisor();
+      } else {
+        return 0;
+      }
+    }
+
+    return stats.get(id).wisdomRemaining / getDivisor();
   }
 }
