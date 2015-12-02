@@ -15,7 +15,7 @@ public class Player implements wtr.sim.Player {
   public static final int FRIEND_POINTS = 50;
   public static final int SOULMATE_POINTS = 200;
   public static final int TICKS = 1800;
-  public static final float TICK_MULTIPLIER = 1.5f;
+  public static final double TICK_MULTIPLIER = 1.5;
 
   public int population;
 
@@ -33,6 +33,9 @@ public class Player implements wtr.sim.Player {
   private boolean canGatherAllWisdom = false;
 
   private HashMap<Integer, PlayerStats> stats;
+
+  private HashMap<Integer, Point> locations;
+  private HashMap<Integer, Point> chats;
 
   // random generator
   private Random random = new Random();
@@ -63,6 +66,15 @@ public class Player implements wtr.sim.Player {
     Point chat = players[j];
     illegal = NONE;
 
+    locations = new HashMap<Integer, Point>();
+    chats = new HashMap<Integer, Point>();
+
+    for (int k = 0; k < players.length; k++) {
+      locations.put(players[k].id, players[k]);
+    }
+    for (int k = 0; k < players.length; k++) {
+      chats.put(players[k].id, locations.get(chat_ids[i]));
+    }
 
     if (!stats.containsKey(chat.id)) {
       stats.put(chat.id, new PlayerStats(chat.id, more_wisdom));
@@ -155,7 +167,7 @@ public class Player implements wtr.sim.Player {
         return null;
       }
 
-      if (players[i].id != chat_ids[i] || players[i].id == illegal)
+      if (players[i].id != chat_ids[i] || players[i].id == illegal || isBusy(players[i].id))
         continue;
 
       if (stats.containsKey(players[i].id) && stats.get(players[i].id).wisdomRemaining > maxWisdom) {
@@ -196,7 +208,7 @@ public class Player implements wtr.sim.Player {
   }
 
   public int getDivisor(){
-    return (int) (Math.pow(population, 0.5));
+    return (int) population;
   }
 
   public int waitTime2(int id) {
@@ -217,5 +229,23 @@ public class Player implements wtr.sim.Player {
     }
 
     return stats.get(id).wisdomRemaining / getDivisor();
+  }
+
+  public boolean isBusy(int id) {
+    if (chats.get(id).id == id || chats.get(id).id == self_id) {
+      return false;
+    }
+    return true;
+    /* Attempt at checking distances of conversation partners. Doesn't really
+     * work.
+    Point self = locations.get(self_id);
+    Point target = locations.get(id);
+    Point chat = locations.get(chats.get(id));
+
+    if (chat == null || distance(self, target) > distance(target, chat)) {
+      return true;
+    } else {
+      return false;
+    } */
   }
 }
