@@ -2,9 +2,13 @@ package wtr.g0;
 
 import wtr.sim.Point;
 
+import java.io.*;
 import java.util.Random;
 
 public class Player implements wtr.sim.Player {
+
+	// debugging mode
+	private final static boolean debug = false;
 
 	// your own id
 	private int self_id = -1;
@@ -13,12 +17,18 @@ public class Player implements wtr.sim.Player {
 	private int[] W = null;
 
 	// random generator
-	private Random random = new Random();
+	private Random random = null;
 
 	// init function called once
 	public void init(int id, int[] friend_ids, int strangers)
 	{
 		self_id = id;
+		random = new Random(id);
+		// create debugging file for player
+		if (debug) try {
+			FileOutputStream stream = new FileOutputStream(new File(self_id + ".dbg"), false);
+			stream.close();
+		} catch (IOException e) {}
 		// initialize the wisdom array
 		int N = friend_ids.length + strangers + 2;
 		W = new int [N];
@@ -43,6 +53,7 @@ public class Player implements wtr.sim.Player {
 		// attempt to continue chatting if there is more wisdom
 		if (wiser) return new Point(0.0, 0.0, chat.id);
 		// try to initiate chat if previously not chatting
+		Point m = null;
 		if (i == j)
 			for (Point p : players) {
 				// skip if no more wisdom to gain
@@ -52,13 +63,24 @@ public class Player implements wtr.sim.Player {
 				double dy = self.y - p.y;
 				double dd = dx * dx + dy * dy;
 				// start chatting if in range
-				if (dd >= 0.25 && dd <= 4.0)
-					return new Point(0.0, 0.0, p.id);
+				if (dd >= 0.25 && dd <= 4.0) {
+					m = new Point(0.0, 0.0, p.id);
+					break;
+				}
 			}
-		// return a random move
-		double dir = random.nextDouble() * 2 * Math.PI;
-		double dx = 6 * Math.cos(dir);
-		double dy = 6 * Math.sin(dir);
-		return new Point(dx, dy, self_id);
+		// return a random move if no move yet
+		if (m == null) {
+			double dir = random.nextDouble() * 2 * Math.PI;
+			double dx = 6 * Math.cos(dir);
+			double dy = 6 * Math.sin(dir);
+			m = new Point(dx, dy, self_id);
+		}
+		// record move if in debug mode 
+		if (debug) try {
+			PrintStream stream = new PrintStream(new FileOutputStream(new File(self_id + ".dbg"), true));
+			stream.println(m.x + ", " + m.y + ", " + m.id);
+			stream.close();
+		} catch (IOException e) {}
+		return m;
 	}
 }

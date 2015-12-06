@@ -2,7 +2,9 @@ package wtr.g3;
 
 import wtr.sim.Point;
 
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.PriorityQueue;
 import java.util.Random;
 
 public class Player implements wtr.sim.Player {
@@ -10,10 +12,11 @@ public class Player implements wtr.sim.Player {
     public static final int NONE = -1;
     public static final double MIN_DISTANCE = 1.0;
     public static final double TARGET_DISTANCE = 0.55;
+    public static final double COMP_DIST = 0.8;
 
     public static final int AVERAGE_STRANGER_POINTS = 10;
     public static final int FRIEND_POINTS = 50;
-    public static final int SOULMATE_POINTS = 200;
+    public static final int SOULMATE_POINTS = 400;
     public static final int TICKS = 1800;
     public static final double TICK_MULTIPLIER = 1.5;
 
@@ -40,6 +43,9 @@ public class Player implements wtr.sim.Player {
     // random generator
     private Random random = new Random();
 
+    private int totalWisdomofStranger = 0;
+    private int unknownPeople = 0;
+
     // init function called once
     public void init(int id, int[] friend_ids, int strangers) {
         population = 2 + friend_ids.length + strangers;
@@ -53,6 +59,8 @@ public class Player implements wtr.sim.Player {
         for (int friend_id : friend_ids) {
             stats.put(friend_id, new PlayerStats(friend_id, 50));
         }
+
+        totalWisdomofStranger = SOULMATE_POINTS + AVERAGE_STRANGER_POINTS * strangers;
     }
 
     // play function
@@ -78,6 +86,8 @@ public class Player implements wtr.sim.Player {
 
         if (!stats.containsKey(chat.id)) {
             stats.put(chat.id, new PlayerStats(chat.id, more_wisdom));
+            totalWisdomofStranger = totalWisdomofStranger - more_wisdom;
+            unknownPeople--;
         } else {
             stats.get(chat.id).setWisdomRemaining(more_wisdom);
         }
@@ -119,7 +129,7 @@ public class Player implements wtr.sim.Player {
 
         }
         // return a random move
-        return randomMove();
+        return newMoveFunction(players, self);
     }
 
     public Point pickClosestTarget(Point[] players, Point self) {
@@ -215,20 +225,20 @@ public class Player implements wtr.sim.Player {
         if (population >= 100 && stats.get(id).wisdomRemaining <= 50) {
             return 0;
         } else {
-            return stats.get(id).wisdomRemaining / (int) Math.sqrt(population) * 2;
+            return stats.get(id).wisdomRemaining / (int) Math.sqrt(population);
         }
     }
 
     public int waitTime(int id) {
         if (canGatherAllWisdom) {
             if (stats.get(id).isSpecial()) {
-                return stats.get(id).wisdomRemaining / getDivisor();
+                return stats.get(id).wisdomRemaining / 10;
             } else {
                 return 0;
             }
         }
 
-        return stats.get(id).wisdomRemaining / getDivisor();
+        return stats.get(id).wisdomRemaining / 10;
     }
 
     public boolean isBusy(int id) {
@@ -247,5 +257,48 @@ public class Player implements wtr.sim.Player {
     } else {
       return false;
     } */
+    }
+
+    private Point newMoveFunction(Point[] players, Point self) {
+        double dir = random.nextDouble() * 2 * Math.PI;
+        double dx = 6 * Math.cos(dir);
+        double dy = 6 * Math.sin(dir);
+        Point position = new Point(dx, dy, self_id);
+
+        PriorityQueue<Point> candidateTomove = new PriorityQueue<Point>(
+                new Comparator<Point>() {
+                    public int compare(Point x, Point y) {
+                        int vx = (!stats.containsKey(x.id)) ? totalWisdomofStranger / unknownPeople : stats.get(x.id).wisdomRemaining;
+                        int vy = (!stats.containsKey(y.id)) ? totalWisdomofStranger / unknownPeople : stats.get(y.id).wisdomRemaining;
+                        return (vy - vx);
+                    }
+                });
+        int i, j;
+        for (i = 0; i < players.length; i++) {
+            if (stats.containsKey(players[i].id) && stats.get(players[i].id).wisdomRemaining == 0) continue;
+
+            double minDistance = Double.MAX_VALUE;
+            for (j = 0; j < players.length; j++) {
+                if (players[j].id == self_id || i == j) continue;
+                dx = players[i].x - players[j].x;
+                dy = players[i].y - players[j].y;
+                double dd = Math.sqrt(dx * dx + dy * dy);
+                if (dd < minDistance)
+                    minDistance = dd;
+            }
+            if (minDistance > COMP_DIST)
+                candidateTomove.offer(players[i]);
+        }
+        double expectedDistance;
+        if (candidateTomove.size() == 0)
+            return position;
+        else
+            expectedDistance = 0.5;
+        dx = candidateTomove.peek().x - self.x;
+        dy = candidateTomove.peek().y - self.y;
+        double distanceTotarget = Math.sqrt(dx * dx + dy * dy);
+        position = new Point(dx * (distanceTotarget - expectedDistance) / distanceTotarget,
+                dy * (distanceTotarget - expectedDistance) / distanceTotarget, self_id);
+        return position;
     }
 }

@@ -8,13 +8,20 @@ public class PlayerStats {
     public final int wisdom;
     public int wisdomRemaining;
     public boolean isFriend;
+    public boolean isSoulmate;
 
     public PlayerStats(int id, int wisdom){
         this.id = id;
         this.wisdom = round(wisdom, 10);
         this.wisdomRemaining = this.wisdom;
 
-        if(wisdom >= 50){
+        if(wisdom == 50){
+            isFriend = true;
+        } else {
+            isFriend = false;
+        }
+
+        if(wisdom > 50){
             isFriend = true;
         } else {
             isFriend = false;
@@ -22,7 +29,7 @@ public class PlayerStats {
     }
 
     public boolean isSpecial() {
-        return isFriend;
+        return isFriend || isSoulmate;
     }
 
     private int round(int num, double nearest){

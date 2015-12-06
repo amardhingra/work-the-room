@@ -51,10 +51,4 @@ public class Person {
       }
       return false;
     }
-
-    @Override
-    public int hashCode() {
-      int a[] = new int[] {id, wisdom};
-      return java.util.Arrays.hashCode(a);
-    }
 }

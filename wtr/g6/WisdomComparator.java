@@ -1,6 +1,7 @@
 package wtr.g6;
 
 import java.util.ArrayList;
+import wtr.sim.Point;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -10,9 +11,11 @@ public class WisdomComparator implements Comparator<Person>{
 	// In the future, add more attributes here as we make this logic more sophisticated!
 
     Person self;
+    Point[] players;
 
-    public WisdomComparator(Person self) {
+    public WisdomComparator(Person self, Point[] players) {
         this.self = self;
+        this.players = players;
     }
 
     @Override
@@ -36,8 +39,8 @@ public class WisdomComparator implements Comparator<Person>{
 //            return 1;
 //        }
 
-        double cost1 = cost(distance1, wisdom1, free1);
-        double cost2 = cost(distance2, wisdom2, free2);
+        double cost1 = cost(distance1, wisdom1, free1, p1);
+        double cost2 = cost(distance2, wisdom2, free2, p2);
 
         if(cost1 == cost2) {
             return 0;
@@ -45,10 +48,14 @@ public class WisdomComparator implements Comparator<Person>{
         return cost1 > cost2 ? -1 : 1;
     }
 
-    private double cost(double distance, int wisdom, boolean free) {
+    private double cost(double distance, int wisdom, boolean free, Person p) {
         try {
             double scale = free ? 100 : 1;
-            return (scale * wisdom) / distance;
+            // whether there is some one too close to that person
+            double dmin = Utils.closestPersonDist(players, p, self);
+            double scale2 = dmin <= 0.5 ? 0.5 : 1;
+            double scale3 = distance>6 ? -1 : distance;
+            return (scale2 * scale * wisdom) / scale3;
         } catch (Exception e) {
             return 0;
         }
