@@ -43,12 +43,9 @@ public class Person {
       }
       return false;
     }
-<<<<<<< HEAD
 
     public int hashCode() {
       int[] a = new int[] {id, wisdom};
       return java.util.Arrays.hashCode(a);
     }
-=======
->>>>>>> origin/master
 }

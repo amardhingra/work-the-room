@@ -12,7 +12,6 @@ public class WisdomComparator implements Comparator<Person>{
 
     Person self;
     Point[] players;
-<<<<<<< HEAD
     int totalWisdomofStranger;
     int unknownPeople;
 
@@ -21,12 +20,6 @@ public class WisdomComparator implements Comparator<Person>{
         this.players = players;
         this.totalWisdomofStranger = totalWisdomofStranger;
         this.unknownPeople = unknownPeople;
-=======
-
-    public WisdomComparator(Person self, Point[] players) {
-        this.self = self;
-        this.players = players;
->>>>>>> origin/master
     }
 
     @Override
@@ -56,13 +49,8 @@ public class WisdomComparator implements Comparator<Person>{
 //            return 1;
 //        }
 
-<<<<<<< HEAD
         double cost1 = cost(distance1, wisdom1, free1, closestDistance1);
         double cost2 = cost(distance2, wisdom2, free2, closestDistance2);
-=======
-        double cost1 = cost(distance1, wisdom1, free1, p1);
-        double cost2 = cost(distance2, wisdom2, free2, p2);
->>>>>>> origin/master
 
         if(cost1 == cost2) {
             return 0;
@@ -70,7 +58,6 @@ public class WisdomComparator implements Comparator<Person>{
         return cost1 > cost2 ? -1 : 1;
     }
 
-<<<<<<< HEAD
     private double cost(double distance, int wisdom, boolean free, double closestDistance) {
         // distance = our distance from that person | wisdom is their wisdom
         // free if they are not talking to someone else | closest distance is the distance of the closest other person from the target
@@ -80,16 +67,6 @@ public class WisdomComparator implements Comparator<Person>{
             // double scale3 = closestDistance < distance ? -1 : distance;
             return (scale * wisdom * closestDistance) / distance;
             // return (scale * scale2 * wisdom) / scale3;
-=======
-    private double cost(double distance, int wisdom, boolean free, Person p) {
-        try {
-            double scale = free ? 100 : 1;
-            // whether there is some one too close to that person
-            double dmin = Utils.closestPersonDist(players, p, self);
-            double scale2 = dmin <= 0.5 ? 0.5 : 1;
-            double scale3 = distance>6 ? -1 : distance;
-            return (scale2 * scale * wisdom) / scale3;
->>>>>>> origin/master
         } catch (Exception e) {
             return 0;
         }

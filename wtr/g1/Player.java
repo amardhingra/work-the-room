@@ -16,10 +16,6 @@ public class Player implements wtr.sim.Player {
 	private int soulmate = -1;
 
 	private int last_chat = -1;
-<<<<<<< HEAD
-=======
-	private int last_wisdom = -1;
->>>>>>> origin/master
 	private int turns_waited = 0;
 	private boolean skip;
 
@@ -99,11 +95,7 @@ public class Player implements wtr.sim.Player {
 					best = temp;
 					// start chatting if in range
 					double dd = distance_squared(p, self);
-<<<<<<< HEAD
 					if (dd >= 0.25 && dd <= 0.5) {
-=======
-					if (dd >= 0.25 && dd <= 0.4) {
->>>>>>> origin/master
 						m = new Point(0.0, 0.0, p.id);
 					}
 				}
@@ -123,7 +115,6 @@ public class Player implements wtr.sim.Player {
 				if (temp > best) {
 					best = temp;
 					r = false;
-<<<<<<< HEAD
 					double x = p.x - self.x;
 					double y = p.y - self.y;
 					if (x > 0) {
@@ -136,10 +127,6 @@ public class Player implements wtr.sim.Player {
 					} else {
 						y += 0.4;
 					}
-=======
-					double x = p.x - self.x - 0.4;
-					double y = p.y - self.y - 0.4;
->>>>>>> origin/master
 					m = new Point(x, y, self.id);
 				}
 			}
