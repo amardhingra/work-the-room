@@ -7,6 +7,7 @@ import java.util.Comparator;
  */
 public class PureWisdomComparator implements Comparator<Person> {
 
+<<<<<<< HEAD
 	int totalWisdomofStranger;
 	int unknownPeople;
 
@@ -16,14 +17,21 @@ public class PureWisdomComparator implements Comparator<Person> {
 		this.unknownPeople = unknownPeople;
 	}
 
+=======
+>>>>>>> origin/master
     @Override
     public int compare(Person p1, Person p2) {
         int wisdom1 = p1.wisdom == -1 ? 100 : p1.wisdom;
         int wisdom2 = p2.wisdom == -1 ? 100 : p2.wisdom;
+<<<<<<< HEAD
         int scale1 = p1.chat_id == p1.id ? 100 : 1;
         int scale2 = p2.chat_id == p2.id ? 100 : 1;
 
         return -(scale1*wisdom1 - scale2*wisdom2);
+=======
+
+        return -(wisdom1 - wisdom2);
+>>>>>>> origin/master
     }
 
 }

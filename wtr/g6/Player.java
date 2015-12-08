@@ -29,9 +29,12 @@ public class Player implements wtr.sim.Player {
 
 	private boolean exhaust = false;
     private int last_move_turn = 0;
+<<<<<<< HEAD
     private int totalWisdomofStranger = 0;
     private int unknownPeople = 0;
     int stranger_wisdom = -1;
+=======
+>>>>>>> origin/master
 
 	// init function called once
 	public void init(int id, int[] friend_ids, int strangers)
@@ -43,8 +46,13 @@ public class Player implements wtr.sim.Player {
 		// initialize the wisdom array
 		int N = friend_ids.length + strangers + 2;
 		for (int i = 0 ; i != N ; ++i) {
+<<<<<<< HEAD
             // int wisdom = i == self_id ? 0 : -1;
 			int stranger_wisdom = (int) (5.5*strangers + 400)/(strangers+1);
+=======
+            //int wisdom = i == self_id ? 0 : -1;
+			int stranger_wisdom = (int) (5.5*strangers + 200)/(strangers+1);
+>>>>>>> origin/master
 			int wisdom = i == self_id ? 0 : stranger_wisdom;
             Person person = new Person(i, wisdom);
             people.put(i, person);
@@ -53,18 +61,26 @@ public class Player implements wtr.sim.Player {
             people.get(friend_id).wisdom = 50;
         }
         //comparator = new WisdomComparator(people.get(self_id));
+<<<<<<< HEAD
         totalWisdomofStranger = 400 + 10 * strangers;
         unknownPeople = strangers + 1;
         // pureWisdomComparator = new PureWisdomComparator();
+=======
+        pureWisdomComparator = new PureWisdomComparator();
+>>>>>>> origin/master
 	}
 
 	// play function
 	public Point play(Point[] players, int[] chat_ids,
 	                  boolean wiser, int more_wisdom)
 	{
+<<<<<<< HEAD
 		// comparator = new WisdomComparator(people.get(self_id), players);
         comparator = new WisdomComparator(people.get(self_id), players, totalWisdomofStranger, unknownPeople);
         pureWisdomComparator = new PureWisdomComparator(totalWisdomofStranger, unknownPeople);
+=======
+		comparator = new WisdomComparator(people.get(self_id), players);
+>>>>>>> origin/master
         Point response = new Point(0, 0, self_id);
         try {
             // update tracking parameters
@@ -116,6 +132,7 @@ public class Player implements wtr.sim.Player {
             }
 
             // if did not gain any wisdom in last 5 turns where we spoke, move to a random location
+<<<<<<< HEAD
             if(!lastKTurnsSuccessfulSinceLastMoved(3)) {
                 response = moveToARandomLocation();
                 return response;
@@ -149,6 +166,62 @@ public class Player implements wtr.sim.Player {
             	}
             }
 
+=======
+            if(!lastKTurnsSuccessfulSinceLastMoved(5)) {
+                response = moveToARandomLocation();
+                return response;
+            }
+
+            if (exhaust) {
+//            	double dmin = Utils.closestPersonDist(players, people.get(chat.id), people.get(self.id));
+//            	if(dmin <= Utils.distance(self, chat))
+//            	{
+//            		if(dmin < 0.5)
+//            		{
+//            			response = moveToProperPerson(players);
+//            			return response;
+//            		}
+//            		else
+//            		{
+//            			response = moveCloserToPerson(self, chat);
+//            			return response;
+//            		}
+//            	}
+//            	else
+//            	{
+//            		if (more_wisdom > 0 && chat_ids[j] == self.id && lastKTurnsSuccessful(k_turn, chat_ids[i])) {
+//                        System.out.println("EXHAUST: I, " + self.id + ", am talking to " + chat.id);
+//                        response = new Point(0, 0, chat.id);
+//                        return response;
+//                    } else {
+//                        exhaust = false;
+//                    }
+//            	}
+            	
+            	if (more_wisdom > 0 && chat_ids[j] == self.id && lastKTurnsSuccessful(k_turn, chat_ids[i])) {
+            		double dmin = Utils.closestPersonDist(players, people.get(chat.id), people.get(self.id));
+                	if(dmin < Utils.distance(self, chat))
+                	{
+                		if(dmin < 0.5)
+                		{
+                			response = moveToProperPerson(players);
+                			return response;
+                		}
+                		else
+                		{
+                			response = moveCloserToPerson(self, chat);
+                			return response;
+                		}
+                	}
+                	else{
+                    response = new Point(0, 0, chat.id);
+                    return response;
+                	}
+                } else {
+                    exhaust = false;
+                }
+            }
+>>>>>>> origin/master
             while(!maximum_wisdom_queue.isEmpty()) {
                 Person person = maximum_wisdom_queue.poll();
                 if(lastKTurnsSuccessful(k_turn, person.id)) {
@@ -226,8 +299,12 @@ public class Player implements wtr.sim.Player {
             double distance = Utils.distance(self, player);
             boolean free = people.get(player.id).chat_id == player.id ? true : false;
             // if the person is not in talking range and has wisdom to offer, move to that person's location
+<<<<<<< HEAD
             if(distance >= 0.5 && distance <= 6 && people.get(player.id).wisdom != 0
                 /*&& Utils.closestPersonDist(players, people.get(player.id), people.get(self.id)) > 0.8*/) {
+=======
+            if(distance > 2 && distance <= 6 && people.get(player.id).wisdom != 0) {
+>>>>>>> origin/master
                 queue.offer(people.get(player.id));
             }
         }
@@ -249,9 +326,13 @@ public class Player implements wtr.sim.Player {
             // - has wisdom to offer
             // - there is no other person too close to that person
             boolean free = people.get(player.id).chat_id == player.id ? true : false;
+<<<<<<< HEAD
             if(distance > 2 && distance <= 6 && people.get(player.id).wisdom != 0 && free
                 && Utils.closestPersonDist(players, people.get(player.id), people.get(self.id)) > 0.52) 
             {
+=======
+            if(distance > 2 && distance <= 6 && people.get(player.id).wisdom != 0 && free && Utils.closestPersonDist(players, people.get(player.id), people.get(self.id)) >= 0.5) {
+>>>>>>> origin/master
                 queue.offer(people.get(player.id));
             }
         }
@@ -284,7 +365,7 @@ public class Player implements wtr.sim.Player {
     private Point moveCloserToPerson(Point self, Point player) {
         double theta = Math.atan2(player.y - self.y, player.x - self.x);
         double distance = Utils.distance(self, player);
-        double new_distance = distance - 0.52;
+        double new_distance = distance - 0.5;
         double dx = Math.abs(new_distance * Math.sin(theta));
         double dy = Math.abs(new_distance * Math.cos(theta));
         if(player.x - self.x < 0) {
