@@ -218,7 +218,7 @@ public class Player implements wtr.sim.Player {
     }
 
     public int getDivisor() {
-        return (int) population;
+        return population;
     }
 
     public int waitTime2(int id) {
