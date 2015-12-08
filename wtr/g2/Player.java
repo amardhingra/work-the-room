@@ -461,7 +461,6 @@ public class Player implements wtr.sim.Player {
         double x = (dis - targetDis) * (target.x - self.x) / dis;
         double y = (dis - targetDis) * (target.y - self.y) / dis;
         return new Point(x, y, self_id);
->>>>>>> origin/master
     }
 
     public int wisdomDependentWaitTime(Point chat) {

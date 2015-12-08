@@ -16,13 +16,6 @@ public class Utils{
         return Math.sqrt((p1.x - p2.cur_position.x)*(p1.x - p2.cur_position.x) + (p1.y - p2.cur_position.y)*(p1.y - p2.cur_position.y));
     }
 
-    public static double distance(Point p1, Person p2) {
-        if(p1 == null || p2 == null) {
-            return 0;
-        }
-        return Math.sqrt((p1.x - p2.cur_position.x)*(p1.x - p2.cur_position.x) + (p1.y - p2.cur_position.y)*(p1.y - p2.cur_position.y));
-    }
-
     public static boolean inTalkRange(Point self, Point p)
     {
         double distance = Utils.distance(self, p);

@@ -160,7 +160,6 @@ public class Player implements wtr.sim.Player {
 		}
 
 	}
-<<<<<<< HEAD
 
 	private double distance_squared(Point a, Point b) {
 		double dx = a.x - b.x;
@@ -168,15 +167,6 @@ public class Player implements wtr.sim.Player {
 		return dx * dx + dy * dy;
 	}
 
-=======
-
-	private double distance_squared(Point a, Point b) {
-		double dx = a.x - b.x;
-		double dy = a.y - b.y;
-		return dx * dx + dy * dy;
-	}
-
->>>>>>> origin/master
 	private boolean has_players_within_radius(Point player, Point[] players, Point self, double r) {
 		for (Point p : players) {
 			if (p == player || p == self) {
