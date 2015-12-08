@@ -21,7 +21,7 @@ public class PlayerStats {
             isFriend = false;
         }
 
-        if(wisdom == 200){
+        if(wisdom > 50){
             isFriend = true;
         } else {
             isFriend = false;
