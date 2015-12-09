@@ -26,7 +26,6 @@ public class Player implements wtr.sim.Player {
     private int self_id = NONE;
 
     // player we don't want to talk to right now due to interruptions
-    private int illegal = NONE;
 
     // last chat id
     private int lastChat = NONE;
@@ -72,7 +71,6 @@ public class Player implements wtr.sim.Player {
         while (players[j].id != chat_ids[i]) j++;
         Point self = players[i];
         Point chat = players[j];
-        illegal = NONE;
 
         locations = new HashMap<Integer, Point>();
         chats = new HashMap<Integer, Point>();
@@ -98,7 +96,7 @@ public class Player implements wtr.sim.Player {
 
         if (!wiser && stats.get(chat.id).hasWisdom()) {
             if (++turnsWaited > waitTime(chat.id)) {
-                illegal = chat.id;
+                return randomMove();
             }
         }
 
@@ -111,7 +109,7 @@ public class Player implements wtr.sim.Player {
             return new Point(0.0, 0.0, chat.id);
         }
 
-        if (i == j || illegal >= 0) {
+        if (i == j) {
             Point closestTarget = pickClosestTarget(players, self);
 
             if (closestTarget != null) {
@@ -129,7 +127,7 @@ public class Player implements wtr.sim.Player {
 
         }
         // return a random move
-        return newMoveFunction(players, self);
+        return newMoveFunction(players, self);//newMoveFunction(players, self);
     }
 
     public Point pickClosestTarget(Point[] players, Point self) {
@@ -138,7 +136,7 @@ public class Player implements wtr.sim.Player {
         int targetId = NONE;
 
         for (Point p : players) {
-            if (p.id == self.id || p.id == illegal)
+            if (p.id == self.id)
                 continue;
 
             // compute squared distance
@@ -177,7 +175,7 @@ public class Player implements wtr.sim.Player {
                 return null;
             }
 
-            if (players[i].id != chat_ids[i] || players[i].id == illegal || isBusy(players[i].id))
+            if (players[i].id != chat_ids[i] || isBusy(players[i].id))
                 continue;
 
             if (stats.containsKey(players[i].id) && stats.get(players[i].id).wisdomRemaining > maxWisdom) {
@@ -259,6 +257,42 @@ public class Player implements wtr.sim.Player {
     } */
     }
 
+
+    private Point moveAway(Point[] players, Point self) {
+        double minDistance = Double.MAX_VALUE;
+        double dir = random.nextDouble() * 2 * Math.PI;
+        double dx = 6 * Math.cos(dir);
+        double dy = 6 * Math.sin(dir);
+        Point position = new Point(dx, dy, self_id);
+        Point target = null;
+
+        for (int i = 0; i < players.length; i++) {
+            if (players[i].id == self_id) continue;
+
+            dx = players[i].x - self.x;
+            dy = players[i].y - self.y;
+            double dd = dx * dx + dy * dy;
+
+            if (dd < minDistance) {
+                minDistance = dd;
+                target = players[i];
+            }
+        }
+
+        if (target != null) {
+            dx = target.x - self.x;
+            dy = target.y - self.y;
+
+            dx = -dx;
+            dy = -dy;
+            double dd = dx * dx + dy * dy;
+            dx = dx / dd * 6;
+            dy = dy / dd * 6;
+            position = new Point(dx, dy, self_id);
+        }
+        return position;
+    }
+
     private Point newMoveFunction(Point[] players, Point self) {
         double dir = random.nextDouble() * 2 * Math.PI;
         double dx = 6 * Math.cos(dir);
@@ -297,8 +331,10 @@ public class Player implements wtr.sim.Player {
         dx = candidateTomove.peek().x - self.x;
         dy = candidateTomove.peek().y - self.y;
         double distanceTotarget = Math.sqrt(dx * dx + dy * dy);
-        position = new Point(dx * (distanceTotarget - expectedDistance) / distanceTotarget,
-                dy * (distanceTotarget - expectedDistance) / distanceTotarget, self_id);
+        position = new Point(dx * (distanceTotarget - expectedDistance) /
+                distanceTotarget,
+                dy * (distanceTotarget - expectedDistance) /
+                        distanceTotarget, self_id);
         return position;
     }
 }
